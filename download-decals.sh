@@ -2,25 +2,43 @@ cluster=`echo "$1" | tr " " _`
 ra=$2
 dec=$3
 
-layer="ls-dr9-south"
+layer="ls-dr9"
 pixscale=0.262
 bands=grz
-size=2048
+size=512
+# for the catalog retrieval
+halfwidth=$(echo "scale=5; ${pixscale} * ${size} / 2 / 3600" | bc)
 
-output=${cluster}__${bands}.fits
+image=${cluster}__${bands}.fits
+catalog=${cluster}__${bands}.cat
 
+path=previews/$cluster
+if [ ! -d $path ]
+then
+    mkdir $path
+fi
+
+url="https://www.legacysurvey.org/viewer"
+
+## image
 # do not download if it already exists (must erase manually to force for now)
-if [ ! -f ${path}/$output ]
+if [ ! -f ${path}/$image ]
 then
     file="fits-cutout?ra=${ra}&dec=${dec}&layer=${layer}&pixscale=${pixscale}&bands=${bands}&size=${size}"
-    url="https://www.legacysurvey.org/viewer/${file}"
-
-    path=previews/$cluster
-    if [ ! -d $path ]
-    then
-        mkdir $path
-    fi
-    wget "$url"
-
-    mv "$file" ${path}/$output
+    wget "${url}/${file}"
+    mv "$file" ${path}/$image
 fi
+
+## catalog
+if [ ! -f ${path}/$catalog ]
+then
+    # catalog boundaries
+    ralo=$(echo "scale=5; ${ra} - ${halfwidth}" | bc)
+    rahi=$(echo "scale=5; ${ra} + ${halfwidth}" | bc)
+    declo=$(echo "scale=5; ${dec} - ${halfwidth}" | bc)
+    dechi=$(echo "scale=5; ${dec} + ${halfwidth}" | bc)
+    file="cat.fits?ralo=${ralo}&rahi=${rahi}&declo=${declo}&dechi=${dechi}"
+    wget "${url}/${layer}/${file}"
+    mv "$file" ${path}/$catalog
+fi
+
