@@ -5,12 +5,13 @@ dec=$3
 layer="ls-dr9"
 pixscale=0.262
 bands=grz
-size=512
+size=4096
 # for the catalog retrieval
 halfwidth=$(echo "scale=5; ${pixscale} * ${size} / 2 / 3600" | bc)
 
-image=${cluster}__${bands}.fits
-catalog=${cluster}__${bands}.cat
+image=${cluster}__img__${bands}.fits
+catalog=${cluster}__cat__${bands}.cat
+first=${cluster}__img__first.fits
 
 path=previews/$cluster
 if [ ! -d $path ]
@@ -20,7 +21,7 @@ fi
 
 url="https://www.legacysurvey.org/viewer"
 
-## image
+## DECaLS image
 # do not download if it already exists (must erase manually to force for now)
 if [ ! -f ${path}/$image ]
 then
@@ -29,7 +30,7 @@ then
     mv "$file" ${path}/$image
 fi
 
-## catalog
+## DECaLS catalog
 if [ ! -f ${path}/$catalog ]
 then
     # catalog boundaries
@@ -42,3 +43,8 @@ then
     mv "$file" ${path}/$catalog
 fi
 
+## FIRST radio image
+if [ ! -f ${path}/$first ]
+then
+    python query_first.py $cluster $ra $dec -i ${path}/$first
+fi
